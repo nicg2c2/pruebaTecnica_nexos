@@ -1,2 +1,1 @@
-# Prueba tecnica para nexos 
- # Hola mundo 
+# Prueba tecnica para nexos
