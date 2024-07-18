@@ -16,7 +16,7 @@ def infoPayload(request){
     if(request == 'title'){
         return result.pull_request.title
     }else if(request == 'urlRepo'){
-        return result.action
+        return result.repository.clone_url
     }else if(request == 'user'){
         return result.pull_request.user.login
     }else if(request == 'branch'){
