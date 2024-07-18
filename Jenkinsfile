@@ -64,16 +64,16 @@ pipeline {
                                 curl -X POST -u ${token}: \
                                 ${env.sonarURL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
                             """
-                            withSonarQubeEnv('sonarqube') {
-                                sh """
-                                    sonar-scanner \
-                                    -Dsonar.host.url=${env.sonarURL} \
-                                    -Dsonar.projectKey=${env.nameProject} \
-                                    -Dsonar.projectName=${env.nameProject} \
-                                    -Dsonar.login=${token} \
-                                """
-                                //-Dsonar.exclusions=**/tests/**,**/docs/**
-                            }
+                        }
+                        withSonarQubeEnv('sonarqube') {
+                            sh """
+                                sonar-scanner \
+                                -Dsonar.host.url=${env.sonarURL} \
+                                -Dsonar.projectKey=${env.nameProject} \
+                                -Dsonar.projectName=${env.nameProject} \
+                                -Dsonar.login=${token} \
+                            """
+                            //-Dsonar.exclusions=**/tests/**,**/docs/**
                         }
 
                         timeout(time: 2, unit: 'MINUTES') {
@@ -104,14 +104,13 @@ pipeline {
                 }
             }
         }
-
-        post {
-            success {
-                echo 'Pipeline ejecutado exitosamente!'
-            }
-            failure {
-                echo 'El pipeline ha fallado - se requiere intervención.'
-            }
+    }
+    post {
+        success {
+            echo 'Pipeline ejecutado exitosamente!'
+        }
+        failure {
+            echo 'El pipeline ha fallado - se requiere intervención.'
         }
     }
 }
