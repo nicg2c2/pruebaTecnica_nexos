@@ -1,21 +1,21 @@
 pipeline {
     agent any
-        environment {
-            sonarURL = 'http://localhost:9000' // URL del servidor SonarQube
-            sonarToken = 'sonarqube' // ID de credencial en Jenkins
-        }
-        stages {
-            stage('Verificacion de payload Webhook') {
-                when {
-                    expression {
-                        // Verifica si el webhook fue activado por un push a la rama develop
-                        return env.WEBHOOK_BRANCH == 'develop'
-                    }
-                }
-                steps {
-                echo 'Webhook verificado: rama develop'
+    environment {
+        sonarURL = 'http://localhost:9000' // URL del servidor SonarQube
+        sonarToken = 'sonarqube' // ID de credencial en Jenkins
+    }
+    stages {
+        stage('Verificacion de payload Webhook') {
+            when {
+                expression {
+                    // Verifica si el webhook fue activado por un push a la rama develop
+                    return env.WEBHOOK_BRANCH == 'develop'
                 }
             }
+            steps {
+                echo 'Verificación de payload webhook completada'
+            }
+        }
 
         stage('Inicio') {
             steps {
@@ -41,9 +41,9 @@ pipeline {
             steps {
                 script {
                     docker.image('python:alpine3.20').inside {
-                    // Instala las dependencias necesarias
-                    sh 'pip install -r requirements.txt'
-                    sh 'python3 -m pytest test_pruebaTecnica.py'
+                        // Instala las dependencias necesarias
+                        sh 'pip install -r requirements.txt'
+                        sh 'python3 -m pytest test_pruebaTecnica.py'
                     }
                 }
             }
@@ -68,7 +68,7 @@ pipeline {
                                 ${env.sonarURL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
                             """
                         }
-                        
+
                         withSonarQubeEnv('sonarqube') {
                             sh """
                                 sonar-scanner \
@@ -91,7 +91,7 @@ pipeline {
                 }
             }
         }
-    
+
         stage('Construir y Subir Imagen Docker') {
             steps {
                 script {
