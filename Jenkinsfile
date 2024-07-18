@@ -12,6 +12,9 @@ pipeline {
                         return env.WEBHOOK_BRANCH == 'develop'
                     }
                 }
+                steps {
+                echo 'Webhook verificado: rama develop'
+                }
             }
 
         stage('Inicio') {
@@ -65,6 +68,7 @@ pipeline {
                                 ${env.sonarURL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
                             """
                         }
+                        
                         withSonarQubeEnv('sonarqube') {
                             sh """
                                 sonar-scanner \
