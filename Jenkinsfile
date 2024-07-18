@@ -5,6 +5,18 @@ pipeline {
         sonarToken = 'sonarqube' // ID de credencial en Jenkins
     }
     stages {
+        stage('Verificacion_payload_Webhook') {
+            when {
+                expression {
+                    // Verifica si el webhook fue activado por un push a la rama develop
+                    return env.WEBHOOK_BRANCH == 'develop'
+                }
+            }
+            steps {
+                echo 'Verificación de payload webhook completada'
+            }
+        }
+
         stage('Inicio') {
             steps {
                 script {
