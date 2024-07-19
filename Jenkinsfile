@@ -1,5 +1,3 @@
-load 'path/to/gitUtils.groovy'
-
 pipeline {
     agent any
     environment {
@@ -7,6 +5,14 @@ pipeline {
         sonarToken = 'sonarqube' // ID de credencial en Jenkins
     }
     stages {
+        stage('Load Shared Library') {
+            steps {
+                script {
+                    // Cargar el archivo gitUtils.groovy que esta en el mismo repositorio
+                    load 'path/to/your/library.groovy'
+                }
+            }
+        }
         stage('Inicio') {
             steps {
                 script {
