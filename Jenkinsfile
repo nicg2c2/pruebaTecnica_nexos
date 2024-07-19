@@ -42,7 +42,7 @@ pipeline {
         stage('Pruebas Unitarias') {
             steps {
                 script {
-                    sh 'pip install -r requirements.txt'
+                    sh 'pip3 install -r requirements.txt'
                     sh 'python3 -m pytest test_pruebaTecnica.py'
                 }
             }
