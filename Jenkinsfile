@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:20.10-dind' // Imagen de Docker con Docker-in-Docker
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // Permite el acceso al Docker Daemon del host
-        }
-    }
+    agent { label 'python-docker-agent' }
     environment {
         sonarURL = 'http://localhost:9000' // URL del servidor SonarQube
         sonarToken = 'sonarqube' // ID de credencial en Jenkins
@@ -47,8 +42,6 @@ pipeline {
         stage('Pruebas Unitarias') {
             steps {
                 script {
-                    docker.image('python:alpine3.20').inside {
-                        // Instala las dependencias necesarias
                         sh 'pip install -r requirements.txt'
                         sh 'python3 -m pytest test_pruebaTecnica.py'
                     }
