@@ -49,7 +49,7 @@ def gitCheckout(Map pipelineParams = [:]) {
                 shallow: false
             ]],
             userRemoteConfigs:  [[
-                credentialsId: 'github_nicolas'
+                credentialsId: 'github_nicolas',
                 url: pipelineParams.repo
             ]]
         ])
