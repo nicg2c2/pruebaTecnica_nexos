@@ -1,3 +1,5 @@
+load 'path/to/gitUtils.groovy'
+
 pipeline {
     agent any
     environment {
