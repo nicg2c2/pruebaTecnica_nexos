@@ -9,7 +9,7 @@ pipeline {
             steps {
                 script {
                     // Cargar el archivo gitUtils.groovy que esta en el mismo repositorio
-                    load 'path/to/your/library.groovy'
+                    load 'gitUtils.groovy'
                 }
             }
         }
