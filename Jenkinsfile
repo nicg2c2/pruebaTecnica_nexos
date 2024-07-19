@@ -18,11 +18,7 @@ pipeline {
                 script {
                     env.branch = infoPayload('branch') // devuelve la rama desde donde se hizo el pull request
                     env.repo = infoPayload('urlRepo') // devuelve la url del repositorio en protocolo https
-                    env.environment = infoPayload('environment') // devuelve la rama hacia donde se hizo el pull request
                     env.nameProject = infoPayload('nameProject') // devuelve el nombre del repositorio/proyecto
-                    env.userGit = infoPayload('user') // devuelve el usuario que abrió el pull request
-                    env.issue = infoPayload('issue') // devuelve el número de solicitud pull
-                    env.title = infoPayload('title') // devuelve el título de la solicitud pull request
                     
                     // Checkout del repositorio Git
                     gitCheckout(env.branch, env.repo)
@@ -126,7 +122,8 @@ pipeline {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**********************************************************************************************************
-*Metodo que permite leer el json del payload y retorna un string con el valor correspondiente
+*Metodo que permite leer el json del payload y retorna un string con el valor correspondiente, 
+se necesita contar con el pluggin Pipeline Utility Steps instalado en Jenkins
 *Paramatros:
     - request: string con la consulta que queremos realizar
 *Opciones:
@@ -147,7 +144,8 @@ def infoPayload(request){
     }else if(request == 'user'){
         return result.pull_request.user.login
     }else if(request == 'branch'){
-        return result.pull_request.head.ref
+        def ref = result.ref
+        return ref.split('/').last()
     }else if(request == 'environment'){
         return result.pull_request.base.ref
     }else if(request == 'nameProject'){
@@ -176,7 +174,7 @@ def gitCheckout(branch, repo) {
                 shallow: false
             ]],
             userRemoteConfigs: [[
-                credentialsId: 'github_nicolas',
+                credentialsId: 'github_nicolas_repo',
                 url: repo
             ]]
         ])
