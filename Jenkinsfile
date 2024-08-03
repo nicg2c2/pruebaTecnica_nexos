@@ -38,7 +38,7 @@ pipeline {
             }
         }
 
-        stage('Construir y Subir Imagen Docker') {
+        stage('Construir, Subir Imagen Docker y Descargarla') {
             steps {
                 script {
                     def imageName = 'coco1995/projectNexos'
@@ -59,7 +59,7 @@ pipeline {
                     def containerId = sh(script: "docker run -dp 5000:5000 ${imageName}:${version}", returnStdout: true).trim()
                     sh "docker logs ${containerId}"
 
-                    sleep (60)
+                    sleep(60)
 
                     // Limpiar: detener y eliminar el contenedor
                     sh "docker stop ${containerId}"
@@ -71,7 +71,7 @@ pipeline {
         stage('Pruebas Unitarias') {
             steps {
                 script {
-                    docker.image('coco1995/python3.8_root:v1').inside
+                    docker.image('coco1995/python3.8_root:v1').inside {
                         // Ejecutar pruebas
                         sh 'python3 -m pytest test_pruebaTecnica.py'                     
                     }
@@ -115,23 +115,6 @@ pipeline {
                             env.sonarqubeState = "failed"
                             error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
                         }
-                    }
-                }
-            }
-        }
-
-        stage('Construir y Subir Imagen Docker') {
-            steps {
-                script {
-                    def imageName = 'coco1995/nexos'
-                    def version = env.BUILD_NUMBER // Usa el ID del build como la versión
-
-                    // Construir la imagen Docker,se tiene que tener el pluggin Docker Pipeline instalado en Jenkins
-                    docker.build("${imageName}:${version}", '.')
-
-                    // Subir la imagen Docker al repositorio en DockerHub
-                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
-                        docker.image("${imageName}:${version}").push()
                     }
                 }
             }
