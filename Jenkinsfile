@@ -41,7 +41,7 @@ pipeline {
         stage('Construir, Subir Imagen Docker y Descargarla') {
             steps {
                 script {
-                    def imageName = 'coco1995/projectNexos'
+                    def imageName = 'coco1995/projectnexos'
                     def version = env.BUILD_NUMBER // Usa el ID del build como la versión
 
                     // Construir la imagen Docker,se tiene que tener el pluggin Docker Pipeline instalado en Jenkins
