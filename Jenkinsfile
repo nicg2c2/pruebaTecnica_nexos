@@ -1,46 +1,51 @@
 pipeline {
     agent any
-        environment {
-            sonarURL = 'http://localhost:9000' // URL del servidor SonarQube
-            sonarToken = 'sonarqube' // ID de credencial en Jenkins
-        }
-        stages {
-            stage('Verificacion de payload Webhook') {
-                when {
-                    expression {
-                        // Verifica si el webhook fue activado por un push a la rama develop
-                        return env.WEBHOOK_BRANCH == 'develop'
-                    }
+    stages {
+        /*stage('Load Shared Library') {
+            steps {
+                script {
+                    // Cargar el archivo gitUtils.groovy que esta en el mismo repositorio
+                    load 'gitUtils.groovy'
                 }
             }
-
+        }*/
+        
         stage('Inicio') {
             steps {
                 script {
-                    env.branch = gitUtils.infoPayload('branch') // devuelve la rama desde donde se hizo el pull request
-                    env.repo = gitUtils.infoPayload('urlRepo') // devuelve la url del repositorio en protocolo https
-                    env.environment = gitUtils.infoPayload('environment') // devuelve la rama hacia donde se hizo el pull request
-                    env.nameProject = gitUtils.infoPayload('nameProject') // devuelve el nombre del repositorio/proyecto
-                    env.userGit = gitUtils.infoPayload('user') // devuelve el usuario que abrió el pull request
-                    env.issue = gitUtils.infoPayload('issue') // devuelve el número de solicitud pull
-                    env.title = gitUtils.infoPayload('title') // devuelve el título de la solicitud pull request
+                    env.branch = infoPayload('branch') // devuelve la rama desde donde se hizo el pull request
+                    env.repo = infoPayload('urlRepo') // devuelve la url del repositorio en protocolo https
+                    env.nameProject = infoPayload('nameProject') // devuelve el nombre del repositorio/proyecto
                     
                     // Checkout del repositorio Git
-                    gitUtils.gitCheckout(
-                        branch: env.branch,
-                        repo: env.repo
+                    gitCheckout(
+                        env.branch,
+                        env.repo
                     )
                 }
+            }
+        }
+
+        stage('Verificacion_payload_Webhook') {
+            when {
+                expression {
+                    // Verifica si el webhook fue activado por un push a la rama develop
+                    return env.WEBHOOK_BRANCH == 'develop'
+                }
+            }
+            steps {
+                echo 'Verificación de payload webhook completada'
             }
         }
 
         stage('Pruebas Unitarias') {
             steps {
                 script {
-                    docker.image('python:alpine3.20').inside {
-                    // Instala las dependencias necesarias
-                    sh 'pip install -r requirements.txt'
-                    sh 'python3 -m pytest test_pruebaTecnica.py'
+                    docker.image('python:3.8').inside{
+                        // Instalar dependencias
+                        sh 'pip3 install -r requirements.txt'
+                        // Ejecutar pruebas
+                        sh 'python3 -m pytest test_pruebaTecnica.py'                     
                     }
                 }
             }
@@ -49,11 +54,11 @@ pipeline {
         stage('Sonar scan') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: "${env.sonarToken}", variable: 'token')]) {
-                        // Verificar si el proyecto ya existe en SonarQube
+                    withSonarQubeEnv('sonarqube') {
+                         // Verificar si el proyecto ya existe en SonarQube
                         def projectExists = sh(
                             script: """
-                                curl -s -o /dev/null -w "%{http_code}" -u ${token}: \${env.sonarURL}/api/projects/search?projects=${env.nameProject}
+                                curl -s -o /dev/null -w "%{http_code}" -u ${env.SONAR_AUTH_TOKEN}: ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
                             """,
                             returnStdout: true
                         ).trim() == '200'
@@ -61,33 +66,32 @@ pipeline {
                         // Crear proyecto en SonarQube si no existe
                         if (!projectExists) {
                             sh """
-                                curl -X POST -u ${token}: \
-                                ${env.sonarURL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
+                                curl -X POST -u ${env.SONAR_AUTH_TOKEN}: \
+                                ${env.SONAR_HOST_URL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
                             """
-                            withSonarQubeEnv('sonarqube') {
-                                sh """
-                                    sonar-scanner \
-                                    -Dsonar.host.url=${env.sonarURL} \
-                                    -Dsonar.projectKey=${env.nameProject} \
-                                    -Dsonar.projectName=${env.nameProject} \
-                                    -Dsonar.login=${token} \
-                                """
-                                //-Dsonar.exclusions=**/tests/**,**/docs/**
-                            }
                         }
 
-                        timeout(time: 2, unit: 'MINUTES') {
-                            def qualityGate = waitForQualityGate()
-                            if (qualityGate.status != 'OK') {
-                                env.sonarqubeState = "failed"
-                                error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
-                            }
+                        sh """
+                            sonar-scanner \
+                            -Dsonar.host.url=${env.SONAR_HOST_URL} \
+                            -Dsonar.projectKey=${env.nameProject} \
+                            -Dsonar.projectName=${env.nameProject} \
+                            -Dsonar.login=${env.SONAR_AUTH_TOKEN} \
+                        """
+                        //-Dsonar.exclusions=**/tests/**,**/docs/**
+                    }
+
+                    timeout(time: 2, unit: 'MINUTES') {
+                        def qualityGate = waitForQualityGate()
+                        if (qualityGate.status != 'OK') {
+                            env.sonarqubeState = "failed"
+                            error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
                         }
                     }
                 }
             }
         }
-    
+
         stage('Construir y Subir Imagen Docker') {
             steps {
                 script {
@@ -104,14 +108,74 @@ pipeline {
                 }
             }
         }
-
-        post {
-            success {
-                echo 'Pipeline ejecutado exitosamente!'
-            }
-            failure {
-                echo 'El pipeline ha fallado - se requiere intervención.'
-            }
+    }
+    post {
+        success {
+            echo 'Pipeline ejecutado exitosamente!'
         }
+        failure {
+            echo 'El pipeline ha fallado - se requiere intervención.'
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////
+/**********************************************************************************************************
+*Metodo que permite leer el json del payload y retorna un string con el valor correspondiente, 
+se necesita contar con el pluggin Pipeline Utility Steps instalado en Jenkins
+*Paramatros:
+    - request: string con la consulta que queremos realizar
+*Opciones:
+    - title:
+    - urlRepo: devuelve la url del repositorio en protocolo https
+    - action: devuelve accion del pull request (opened , closed)
+    - user: devuelve el usuario que abrió el pull request
+    - environment: devuelve la rama hacia donde se hizo el pull request
+    - branch: devuelve la rama desde donde se hizo el pull request
+    - nameProject: devuelve el nombre del proyecto
+***/
+def infoPayload(request){
+    def result = readJSON text: payload
+    if(request == 'title'){
+        return result.pull_request.title
+    }else if(request == 'urlRepo'){
+        return result.repository.clone_url
+    }else if(request == 'user'){
+        return result.pull_request.user.login
+    }else if(request == 'branch'){
+        def ref = result.ref
+        return ref.split('/').last()
+    }else if(request == 'environment'){
+        return result.pull_request.base.ref
+    }else if(request == 'nameProject'){
+        return result.repository.name
+    }else if(request == 'issue'){
+        def pattern = /.*issue=/
+        return result.pull_request.title.replaceAll(pattern,"").trim()
+    }
+}
+
+/***********************************************************************************************************
+*Script que realiza el clone de las fuentes
+*Variables:
+    - branch: string, rama donde se realizará el clone
+    - repo: String, url del repositorio a clonar
+***/
+def gitCheckout(branch, repo) {
+    stage('checkout') {
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: branch]], // Especifica la rama que deseas clonar
+            extensions: [[
+                $class: 'CloneOption',
+                noTags: false,
+                reference: '',
+                shallow: false
+            ]],
+            userRemoteConfigs: [[
+                credentialsId: 'github_nicolas_repo',
+                url: repo
+            ]]
+        ])
     }
 }
