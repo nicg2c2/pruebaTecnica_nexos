@@ -38,12 +38,40 @@ pipeline {
             }
         }
 
+        stage('Construir y Subir Imagen Docker') {
+            steps {
+                script {
+                    def imageName = 'coco1995/projectNexos'
+                    def version = env.BUILD_NUMBER // Usa el ID del build como la versión
+
+                    // Construir la imagen Docker,se tiene que tener el pluggin Docker Pipeline instalado en Jenkins
+                    docker.build("${imageName}:${version}", '.')
+
+                    // Subir la imagen Docker al repositorio en DockerHub
+                    docker.withRegistry('https://registry.hub.docker.com', 'docker-hub-credentials') {
+                        docker.image("${imageName}:${version}").push()
+                    }
+
+                    // Descargar la imagen desde DockerHub
+                    sh "docker pull ${imageName}:${version}"
+
+                    // Ejecutar un contenedor y mostrar logs
+                    def containerId = sh(script: "docker run -dp 5000:5000 ${imageName}:${version}", returnStdout: true).trim()
+                    sh "docker logs ${containerId}"
+
+                    sleep (60)
+
+                    // Limpiar: detener y eliminar el contenedor
+                    sh "docker stop ${containerId}"
+                    sh "docker rm ${containerId}"
+                }
+            }
+        }
+        
         stage('Pruebas Unitarias') {
             steps {
                 script {
-                    docker.image('python:3.8').inside{
-                        // Instalar dependencias
-                        sh 'pip3 install -r requirements.txt'
+                    docker.image('coco1995/python3.8_root:v1').inside
                         // Ejecutar pruebas
                         sh 'python3 -m pytest test_pruebaTecnica.py'                     
                     }

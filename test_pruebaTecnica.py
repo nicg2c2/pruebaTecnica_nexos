@@ -1,5 +1,5 @@
 import pytest
-from pruebaTecnica import app
+from AppTecnica import app
 
 # fixture es una función que puede ser utilizada por las pruebas para obtener recursos y configuraciones.
 @pytest.fixture
