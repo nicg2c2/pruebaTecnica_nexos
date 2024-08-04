@@ -67,7 +67,7 @@ pipeline {
                     // Limpiar: detener y eliminar el contenedor
                     sh "docker stop ${containerId}"
                     sh "docker rm ${containerId}"
-                }
+                }   
             }
         }
         
@@ -87,9 +87,6 @@ pipeline {
                 script {
                     
                     withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]){   
-                        echo "Sonar Host URL: ${env.SONAR_HOST_URL}"
-                        echo "Project Name: ${env.nameProject}"
-                        echo "TOKEN Name: ${SONAR_AUTH_TOKEN}"
 
                         // Verificar si el proyecto ya existe en SonarQube
                         def projectExists = sh(
