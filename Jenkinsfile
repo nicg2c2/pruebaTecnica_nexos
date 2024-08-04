@@ -121,13 +121,13 @@ pipeline {
                 }
             }
         }
-        post {
-            success {
-                echo 'Pipeline ejecutado exitosamente!'
-            }
-            failure {
-                echo 'El pipeline ha fallado - se requiere intervención.'
-            }
+    }
+    post {
+        success {
+            echo 'Pipeline ejecutado exitosamente!'
+        }
+        failure {
+            echo 'El pipeline ha fallado - se requiere intervención.'
         }
     }    
 }
