@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment{
-        SONAR_HOST_URL = 'http://localhost:9000'
+        SONAR_HOST_URL = 'http://sonarqube:9000'
     }
     stages {
         /*stage('Load Shared Library') {
@@ -13,7 +13,7 @@ pipeline {
             }
         }*/
         
-        stage('Inicio') {
+        stage('Start') {
             steps {
                 script {
                     env.branch = infoPayload('branch') // devuelve la rama desde donde se hizo el pull request
@@ -41,7 +41,7 @@ pipeline {
             }
         }
 
-        stage('Construir, Subir Imagen Docker y Descargarla') {
+        stage('Build, Up image Docker and Download') {
             steps {
                 script {
                     def imageName = 'coco1995/projectnexos'
@@ -132,6 +132,14 @@ pipeline {
                     }    
                 }
             }
+        }
+        stage('Cleanup Docker Images') {
+            steps {
+                // limpieza de imagenes que no se estan utilizando -f Elimina imágenes intermedias no usadas, sin imágenes etiquetadas en uso y con -a Elimina todas las imágenes no usadas, incluyendo imágenes etiquetadas que no están en uso.
+                sh '''
+                    docker image prune -f
+                '''
+            }       
         }
     }
     post {
