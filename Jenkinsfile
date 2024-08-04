@@ -62,7 +62,7 @@ pipeline {
                     def containerId = sh(script: "docker run -dp 5000:5000 ${imageName}:${version}", returnStdout: true).trim()
                     sh "docker logs ${containerId}"
 
-                    sleep(20)
+                    sleep(1)
 
                     // Limpiar: detener y eliminar el contenedor
                     sh "docker stop ${containerId}"
