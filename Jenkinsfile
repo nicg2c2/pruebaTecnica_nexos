@@ -59,7 +59,7 @@ pipeline {
                     def containerId = sh(script: "docker run -dp 5000:5000 ${imageName}:${version}", returnStdout: true).trim()
                     sh "docker logs ${containerId}"
 
-                    sleep(60)
+                    sleep(20)
 
                     // Limpiar: detener y eliminar el contenedor
                     sh "docker stop ${containerId}"
@@ -82,32 +82,32 @@ pipeline {
         stage('Sonar scan') {
             steps {
                 script {
-                    docker.image('sonarsource/sonar-scanner-cli').inside{
-                        withSonarQubeEnv('sonarqube') {
-                            // Verificar si el proyecto ya existe en SonarQube
-                            def projectExists = sh(
-                                script: """
-                                    curl -s -o /dev/null -w "%{http_code}" -u ${env.SONAR_AUTH_TOKEN}: ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
-                                """,
-                                returnStdout: true
-                            ).trim() == '200'
+                    // Verificar si el proyecto ya existe en SonarQube
+                    def projectExists = sh(
+                        script: """
+                            curl -s -o /dev/null -w "%{http_code}" -u ${env.SONAR_AUTH_TOKEN}: ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
+                        """,
+                        returnStdout: true
+                    ).trim() == '200'
 
-                            // Crear proyecto en SonarQube si no existe
-                            if (!projectExists) {
+                    // Crear proyecto en SonarQube si no existe
+                    if (!projectExists) {
+                        sh """
+                            curl -X POST -u ${env.SONAR_AUTH_TOKEN}: \
+                            ${env.SONAR_HOST_URL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
+                        """
+                        
+                        docker.image('sonarsource/sonar-scanner-cli').inside{
+                            withSonarQubeEnv('sonarqube') {
                                 sh """
-                                    curl -X POST -u ${env.SONAR_AUTH_TOKEN}: \
-                                    ${env.SONAR_HOST_URL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
+                                    sonar-scanner \
+                                    -Dsonar.host.url=${env.SONAR_HOST_URL} \
+                                    -Dsonar.projectKey=${env.nameProject} \
+                                    -Dsonar.projectName=${env.nameProject} \
+                                    -Dsonar.login=${env.SONAR_AUTH_TOKEN} \
                                 """
+                                //-Dsonar.exclusions=**/tests/**,**/docs/**
                             }
-
-                            sh """
-                                sonar-scanner \
-                                -Dsonar.host.url=${env.SONAR_HOST_URL} \
-                                -Dsonar.projectKey=${env.nameProject} \
-                                -Dsonar.projectName=${env.nameProject} \
-                                -Dsonar.login=${env.SONAR_AUTH_TOKEN} \
-                            """
-                            //-Dsonar.exclusions=**/tests/**,**/docs/**
                         }
 
                         timeout(time: 2, unit: 'MINUTES') {
@@ -121,6 +121,7 @@ pipeline {
                 }
             }
         }
+
     }
     post {
         success {
