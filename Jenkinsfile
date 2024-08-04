@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    environment{
+        SONAR_AUTH_TOKEN = credentials('sonarqube')
+        SONAR_HOST_URL = 'http://localhost:9000/'
+    }
     stages {
         /*stage('Load Shared Library') {
             steps {
