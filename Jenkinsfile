@@ -109,7 +109,7 @@ pipeline {
                             """
                         }
                         // Ejecutar sonar-scanner dentro de un contenedor Docker
-                        docker.image('sonarsource/sonar-scanner-cli').inside('-u root'){
+                        docker.image('sonarsource/sonar-scanner-cli').inside('--network jenkins_network -u root'){
                             sh """
                                 sonar-scanner \
                                 -Dsonar.host.url=${env.SONAR_HOST_URL} \
