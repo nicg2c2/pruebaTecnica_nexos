@@ -109,18 +109,14 @@ pipeline {
                             """
                         }
                         
-                        docker.image('sonarsource/sonar-scanner-cli').inside{
-                            withSonarQubeEnv('sonarqube') {
-                                sh """
-                                    sonar-scanner \
-                                    -Dsonar.host.url=${env.SONAR_HOST_URL} \
-                                    -Dsonar.projectKey=${env.nameProject} \
-                                    -Dsonar.projectName=${env.nameProject} \
-                                    -Dsonar.login=${env.SONAR_AUTH_TOKEN} \
-                                """
-                                //-Dsonar.exclusions=**/tests/**,**/docs/**
-                            }
-                        }
+                        sh """
+                            sonar-scanner \
+                            -Dsonar.host.url=${env.SONAR_HOST_URL} \
+                            -Dsonar.projectKey=${env.nameProject} \
+                            -Dsonar.projectName=${env.nameProject} \
+                            -Dsonar.login=${env.SONAR_AUTH_TOKEN} \
+                        """
+                        //-Dsonar.exclusions=**/tests/**,**/docs/**
 
                         timeout(time: 2, unit: 'MINUTES') {
                             def qualityGate = waitForQualityGate()
