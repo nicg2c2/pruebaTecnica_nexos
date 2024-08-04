@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment{
-        SONAR_HOST_URL = 'http://localhost:9000/'
+        SONAR_HOST_URL = 'http://localhost:9000'
     }
     stages {
         /*stage('Load Shared Library') {
@@ -85,8 +85,12 @@ pipeline {
         stage('Sonar scan') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]){
-                        
+                    
+                    withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]){   
+                        echo "Sonar Host URL: ${env.SONAR_HOST_URL}"
+                        echo "Project Name: ${env.nameProject}"
+                        echo "TOKEN Name: ${SONAR_AUTH_TOKEN}"
+
                         // Verificar si el proyecto ya existe en SonarQube
                         def projectExists = sh(
                             script: """
