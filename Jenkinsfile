@@ -116,30 +116,26 @@ pipeline {
                             }
                         }
 
+                        timeout(time: 2, unit: 'MINUTES') {
+                            def qualityGate = waitForQualityGate()
+                            if (qualityGate.status != 'OK') {
+                                env.sonarqubeState = "failed"
+                                error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+                            }
+                        }
                     }    
                 }
             }
         }
     }
     post {
-        always{
-            // Evaluar la puerta de calidad
-            timeout(time: 2, unit: 'MINUTES') {
-                def qualityGate = waitForQualityGate()
-                if (qualityGate.status != 'OK') {
-                    env.sonarqubeState = "failed"
-                    error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
-                }   
-            }
-
-            success {
-                echo 'Pipeline ejecutado exitosamente!'
-            }
-            failure {
-                echo 'El pipeline ha fallado - se requiere intervención.'
-            }
+        success {
+            echo 'Pipeline ejecutado exitosamente!'
         }
-    }        
+        failure {
+            echo 'El pipeline ha fallado - se requiere intervención.'
+        }
+    }    
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
