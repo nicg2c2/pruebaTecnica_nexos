@@ -94,7 +94,7 @@ pipeline {
                         // Verificar si el proyecto ya existe en SonarQube
                         def projectExists = sh(
                             script: """
-                                curl -s -o /dev/null -w '%{http_code}' -u :$(cat /tmp/sonar_token.txt) ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
+                                curl -s -o /dev/null -w '%{http_code}' -u :${env.SONAR_AUTH_TOKEN} ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
                             """,
                             returnStdout: true
                         ).trim() == '200'
