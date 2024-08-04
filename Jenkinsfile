@@ -88,10 +88,13 @@ pipeline {
                     
                     withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]){   
 
+                        // Guardar el token en un archivo temporal
+                        writeFile file: '/tmp/sonar_token.txt', text: "${env.SONAR_AUTH_TOKEN}"
+
                         // Verificar si el proyecto ya existe en SonarQube
                         def projectExists = sh(
                             script: """
-                                curl -s -o /dev/null -w "%{http_code}" -u ${env.SONAR_AUTH_TOKEN}: ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
+                                curl -s -o /dev/null -w "%{http_code}" -u :$(cat /tmp/sonar_token.txt) ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
                             """,
                             returnStdout: true
                         ).trim() == '200'
