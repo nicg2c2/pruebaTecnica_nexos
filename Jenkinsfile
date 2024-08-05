@@ -1,8 +1,5 @@
 pipeline {
     agent any
-    environment{
-        SONAR_HOST_URL = 'http://sonarqube:9000'
-    }
     stages {
         /*stage('Load Shared Library') {
             steps {
@@ -85,49 +82,47 @@ pipeline {
         stage('Sonar scan') {
             steps {
                 script {
-                    
-                    withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_AUTH_TOKEN')]){  
-                        
-                        // Test connection
-                        sh """
-                            curl -v ${env.SONAR_HOST_URL}
-                        """
-
-                        // Verificar si el proyecto ya existe en SonarQube
-                        def projectExists = sh(
-                            script: """
-                                curl -s -o /dev/null -w "%{http_code}" -u ${env.SONAR_AUTH_TOKEN}: ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
-                            """,
-                            returnStdout: true
-                        ).trim() == '200'
-
-                        // Crear proyecto en SonarQube si no existe
-                        if (!projectExists) {
+                    withSonarQubeEnv('sonarqube'){
+                        withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {                        
+                            // Test connection
                             sh """
-                                curl -X POST -u ${env.SONAR_AUTH_TOKEN}: \
-                                ${env.SONAR_HOST_URL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
+                                curl -v ${env.SONAR_HOST_URL}
                             """
-                        }
-                        // Ejecutar sonar-scanner dentro de un contenedor Docker
-                        docker.image('sonarsource/sonar-scanner-cli').inside('--network jenkins_network -u root'){
-                            sh """
+
+                            // Verificar si el proyecto ya existe en SonarQube
+                            def projectExists = sh(
+                                script: """
+                                    curl -s -o /dev/null -w "%{http_code}" -u ${env.SONAR_AUTH_TOKEN}: ${env.SONAR_HOST_URL}/api/projects/search?projects=${env.nameProject}
+                                """,
+                                returnStdout: true
+                            ).trim() == '200'
+
+                            // Crear proyecto en SonarQube si no existe
+                            if (!projectExists) {
+                                sh """
+                                    curl -X POST -u ${env.SONAR_AUTH_TOKEN}: \
+                                    ${env.SONAR_HOST_URL}/api/projects/create?project=${env.nameProject}&name=${env.nameProject}
+                                """
+                            }
+
+                            // Ejecutar sonar-scanner dentro del contenedor ya en ejecución
+                            sh '''
                                 sonar-scanner \
-                                -Dsonar.host.url=${env.SONAR_HOST_URL} \
-                                -Dsonar.projectKey=${env.nameProject} \
-                                -Dsonar.projectName=${env.nameProject} \
-                                -Dsonar.login=${env.SONAR_AUTH_TOKEN} \
-                            """
-                                //-Dsonar.exclusions=**/tests/**,**/docs/**
-                        }
+                                -Dsonar.host.url=${SONAR_HOST_URL} \
+                                -Dsonar.projectKey=pruebaTecnica_nexos \
+                                -Dsonar.projectName=pruebaTecnica_nexos \
+                                -Dsonar.login=${SONAR_AUTH_TOKEN}
+                            '''
 
-                        timeout(time: 2, unit: 'MINUTES') {
-                            def qualityGate = waitForQualityGate()
-                            if (qualityGate.status != 'OK') {
-                                env.sonarqubeState = "failed"
-                                error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+                            timeout(time: 2, unit: 'MINUTES') {
+                                def qualityGate = waitForQualityGate()
+                                if (qualityGate.status != 'OK') {
+                                    env.sonarqubeState = "failed"
+                                    error "Pipeline aborted due to quality gate failure: ${qualityGate.status}"
+                                }
                             }
                         }
-                    }    
+                    }
                 }
             }
         }
@@ -182,7 +177,7 @@ def infoPayload(request){
         return result.repository.name
     }else if(request == 'issue'){
         def pattern = /.*issue=/
-        return result.pull_request.title.replaceAll(pattern,"").trim()
+        return result.pull_request.title.replaceAll(pattern, "").trim()
     }
 }
 
