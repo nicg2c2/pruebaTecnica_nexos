@@ -83,6 +83,7 @@ pipeline {
             steps {
                 script {
                     withSonarQubeEnv('sonarqube'){
+                        def sonarqubeScannerHome = tool name: 'sonar', type: 'hudson.plugins.sonar.SonarRunnerInstaller'
                         withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_AUTH_TOKEN')]) {                        
                             // Test connection
                             sh """
@@ -109,10 +110,14 @@ pipeline {
                             sh '''
                                 sonar-scanner \
                                 -Dsonar.host.url=${SONAR_HOST_URL} \
-                                -Dsonar.projectKey=pruebaTecnica_nexos \
+                                -Dsonar.login=${SONAR_AUTH_TOKEN} \
                                 -Dsonar.projectName=pruebaTecnica_nexos \
-                                -Dsonar.login=${SONAR_AUTH_TOKEN}
+                                -Dsonar.projectVersion=${env.BUILD_NUMBER} \
+                                -Dsonar.projectKey=nexos
                             '''
+                            /*  -Dsonar.sources=complete/src/main/  Define la ruta a los archivos fuente que se deben analizar.
+                                -Dsonar.java.binaries=."  Proporciona la ruta a los archivos binarios del proyecto 
+                                -Dsonar.tests=complete/src/test/ Especifica la ruta a los archivos de prueba que se deben analizar. */
 
                             timeout(time: 2, unit: 'MINUTES') {
                                 def qualityGate = waitForQualityGate()
