@@ -146,7 +146,7 @@ pipeline {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**********************************************************************************************************
+/*********************************************************************************************************
 *Metodo que permite leer el json del payload y retorna un string con el valor correspondiente, 
 se necesita contar con el pluggin Pipeline Utility Steps instalado en Jenkins
 *Paramatros:
